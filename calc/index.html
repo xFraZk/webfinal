@@ -6,7 +6,6 @@
   <title>Calculadora de Costos Hoho 3D</title>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <!-- CDNs actualizados para máxima compatibilidad -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
   <style>
@@ -1198,7 +1197,7 @@
         }
       });
 
-      // Export PDF - Solución robusta
+      // Export PDF
       document.getElementById('exportPDFBtn').addEventListener('click', exportToPDF);
 
       // Shipping cost calculation
@@ -1563,7 +1562,7 @@
         document.getElementById('calculationSuccess').style.display = 'none';
       }
 
-      // SOLUCIÓN ROBUSTA PARA GENERAR PDF
+      // SOLUCIÓN CORREGIDA PARA GENERAR PDF
       function exportToPDF() {
         try {
           if (!totalFinal || totalFinal === '—') {
@@ -1571,15 +1570,15 @@
             return;
           }
 
-          // Verificar múltiples formas de acceso a la librería
-          if (typeof window.jspdf !== 'undefined') {
-            generatePDF(window.jspdf.jsPDF);
-          } else if (typeof jspdf !== 'undefined') {
+          // Verificar si la librería está disponible
+          if (typeof jspdf !== 'undefined' && jspdf.jsPDF) {
             generatePDF(jspdf.jsPDF);
           } else {
-            // Cargar dinámicamente si no se detecta
+            // Intentar cargar la librería si no está disponible
             loadPDFLibrary()
-              .then(jsPDF => generatePDF(jsPDF))
+              .then(jsPDF => {
+                generatePDF(jsPDF);
+              })
               .catch(error => {
                 console.error('Error al cargar librería PDF:', error);
                 alert('No se pudo cargar la librería PDF. Intenta recargar la página.');
@@ -1595,7 +1594,7 @@
       function loadPDFLibrary() {
         return new Promise((resolve, reject) => {
           // Verificar si ya se cargó
-          if (typeof jspdf !== 'undefined') {
+          if (typeof jspdf !== 'undefined' && jspdf.jsPDF) {
             resolve(jspdf.jsPDF);
             return;
           }
@@ -1603,16 +1602,18 @@
           const script = document.createElement('script');
           script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
           script.onload = () => {
-            // Verificar múltiples formas de acceso
-            if (typeof window.jspdf !== 'undefined') {
-              resolve(window.jspdf.jsPDF);
-            } else if (typeof jspdf !== 'undefined') {
-              resolve(jspdf.jsPDF);
-            } else {
-              reject(new Error('Librería no disponible después de carga'));
-            }
+            // Esperar un momento para que la librería se registre
+            setTimeout(() => {
+              if (typeof jspdf !== 'undefined' && jspdf.jsPDF) {
+                resolve(jspdf.jsPDF);
+              } else {
+                reject(new Error('La librería jsPDF no está disponible después de cargar.'));
+              }
+            }, 100);
           };
-          script.onerror = () => reject(new Error('Error al cargar script'));
+          script.onerror = () => {
+            reject(new Error('Error al cargar el script de jsPDF.'));
+          };
           document.head.appendChild(script);
         });
       }
@@ -1696,4 +1697,3 @@
   </script>
 </body>
 </html>
-
